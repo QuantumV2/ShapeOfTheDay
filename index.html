@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shape of the Day</title>
+</head>
+<body>
+    <div class="centeredText" style="font-size: 5w;">Shape of the Day:</div>
+    <div class="container centered-div">
+        <canvas id="shapeCanvas" width="400" height="400"></canvas>
+    </div>
+    <div id="shapeInfo" style="font-size:3.5vh; transform: translate(0%, 52.5vh);">Info</div>
+    <div class="centeredText" style="white-space: normal;color:#414141;font-size:xx-large;transform: translate(0%, 55vh);">Made by QuantumV in 1 day for fun :) Give credit if this website's code is used (even though its awful lol)</div>
+    <script>
+        //allow for custom seeds because im a good guy :)
+        const urlParams = new URLSearchParams(window.location.search);
+        const seed = parseInt(urlParams.get('seed')) || getCurrentDayAsInt();
+        urlParams.set('seed', seed.toString());
+        history.pushState({}, '', window.location.pathname + '?' + urlParams.toString());
+
+        const canvas = document.getElementById('shapeCanvas');
+        const ctx = canvas.getContext('2d');
+        const infoDiv = document.getElementById('shapeInfo');
+
+        class SeededRandom {
+            constructor(seed) {
+                this.seed = seed;
+                this.a = 1664525;
+                this.c = 1013904223;
+                this.m = Math.pow(2, 32);
+            }
+
+            next() {
+                this.seed = (this.a * this.seed + this.c) % this.m;
+                return this.seed / this.m; // normalize to [0, 1]
+            }
+        }
+        //get current date as int
+        function getCurrentDayAsInt() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = (now.getMonth() + 1).toString().padStart(2, '0'); 
+            const day = now.getDate().toString().padStart(2, '0');
+
+            const dateString = `${day}${month}${year}`;
+
+            return hashStringToInt(dateString);
+        }
+
+        function hashStringToInt(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = (hash << 5) - hash + char;
+                hash |= 0; // Convert to 32bit integer
+            }
+            return Math.abs(hash);
+                        return parseInt(dateString, 10);
+        }
+        
+
+        function getRandomInt(min, max, rng) {
+        return Math.floor(rng.next() * (max - min + 1)) + min;
+        }
+
+        function calculateDistance(point1, point2) {
+        return Math.sqrt(Math.pow(point2.x - point1.x, 2) + Math.pow(point2.y - point1.y, 2));
+        }
+
+        function calculateArea(points) {
+        // A method to approximate the area of an irregular polygon
+        let area = 0;
+        for (let i = 0; i < points.length; i++) {
+            const j = (i + 1) % points.length;
+            area += points[i].x * points[j].y;
+            area -= points[j].x * points[i].y;
+        }
+        return Math.abs(area / 2);
+        }
+
+        function drawRandomShape() {
+        const rng = new SeededRandom(seed);
+        // Clear the canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Set a random number of points for the new shape
+        const points = [];
+        const numberOfPoints = getRandomInt(3, 10, rng); // At least a triangle
+
+        // Generate random points
+        for (let i = 0; i < numberOfPoints; i++) {
+            points.push({
+            x: getRandomInt(0, canvas.width, rng),
+            y: getRandomInt(0, canvas.height, rng)
+            });
+        }
+
+        // Sort points by angle from center to ensure a non-intersecting shape
+        const center = points.reduce((acc, val) => {
+            return {
+            x: acc.x + val.x / points.length,
+            y: acc.y + val.y / points.length
+            };
+        }, {x: 0, y: 0});
+
+        points.sort((a, b) => {
+            return Math.atan2(a.y - center.y, a.x - center.x) - Math.atan2(b.y - center.y, b.x - center.x);
+        });
+
+        // Begin drawing the random shape
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        let perimeter = 0;
+        for (let i = 1; i < numberOfPoints; i++) {
+            ctx.lineTo(points[i].x, points[i].y);
+            perimeter += calculateDistance(points[i], points[i - 1]);
+        }
+        ctx.closePath();
+        perimeter += calculateDistance(points[0], points[numberOfPoints - 1]); // Close the shape and add the last side to the perimeter
+            // Fill the shape with a random color
+        const color = `rgb(${getRandomInt(0, 255, rng)}, ${getRandomInt(0, 255, rng)}, ${getRandomInt(0, 255, rng)})`;
+        ctx.fillStyle = color;
+        ctx.fill();
+
+    // Calculate the area
+    const area = calculateArea(points);
+
+    // Display the information
+    infoDiv.innerHTML = `Points: ${numberOfPoints}<br>Perimeter: ${perimeter.toFixed(2)}<br>Area: ${area.toFixed(2)}`;
+    }
+
+    // Initial draw
+    drawRandomShape();
+
+
+
+    </script>
+    <style>
+
+
+        body {
+            background-color: #1c1c1c;
+            font-family: 'Courier New', monospace;
+        }
+
+        #character, #shapeCanvas {
+            color: white;
+            text-align: center;
+            width: 100%;
+            height: 100%;
+            font-size: 90px;
+        }
+
+        #characterName, #shapeInfo {
+            white-space: nowrap;
+            color: white;
+            text-align: center;
+            width: 100%;
+            height: 100%;
+            font-size: 6vw;
+        }
+
+        .centeredText {
+            white-space: nowrap;
+            color: white;
+            text-align: center;
+            width: 100%;
+            height: 100%;
+            font-size: 6vw;
+        }
+
+        .container {
+            position: absolute;
+            display: inline-block;
+        }
+
+        .centered-div{
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -40%);
+        }
+
+        .square {
+            border-radius: 10px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100px;
+            height: 100px;
+            background-color: #3b3b3b;
+            opacity: 0.5;
+        }
+
+    </style>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Random Shape Generator</title>
+<style>
+    #shapeCanvas {
+    border: 1px solid #000;
+    display: block;
+    margin: 20px auto;
+    }
+
+    #generateShape {
+    display: block;
+    margin: 20px auto;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    }
+</style>
+</head>
+<body>
+<canvas id="shapeCanvas" width="400" height="400"></canvas>
+<div id="shapeInfo"></div>
+<button id="generateShape">Generate Random Shape</button>
+
+<script>
+const canvas = document.getElementById('shapeCanvas');
+const ctx = canvas.getContext('2d');
+const infoDiv = document.getElementById('shapeInfo'); // Add a div with this id in your HTML to display the info
+
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function calculateDistance(point1, point2) {
+  return Math.sqrt(Math.pow(point2.x - point1.x, 2) + Math.pow(point2.y - point1.y, 2));
+}
+
+function calculateArea(points) {
+  // A method to approximate the area of an irregular polygon
+  let area = 0;
+  for (let i = 0; i < points.length; i++) {
+    const j = (i + 1) % points.length;
+    area += points[i].x * points[j].y;
+    area -= points[j].x * points[i].y;
+  }
+  return Math.abs(area / 2);
+}
+
+function drawRandomShape() {
+  // Clear the canvas
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Set a random number of points for the new shape
+  const points = [];
+  const numberOfPoints = getRandomInt(3, 10); // At least a triangle
+
+  // Generate random points
+  for (let i = 0; i < numberOfPoints; i++) {
+    points.push({
+      x: getRandomInt(0, canvas.width),
+      y: getRandomInt(0, canvas.height)
+    });
+  }
+
+  // Sort points by angle from center to ensure a non-intersecting shape
+  const center = points.reduce((acc, val) => {
+    return {
+      x: acc.x + val.x / points.length,
+      y: acc.y + val.y / points.length
+    };
+  }, {x: 0, y: 0});
+
+  points.sort((a, b) => {
+    return Math.atan2(a.y - center.y, a.x - center.x) - Math.atan2(b.y - center.y, b.x - center.x);
+  });
+
+  // Begin drawing the random shape
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, points[0].y);
+  let perimeter = 0;
+  for (let i = 1; i < numberOfPoints; i++) {
+    ctx.lineTo(points[i].x, points[i].y);
+    perimeter += calculateDistance(points[i], points[i - 1]);
+  }
+  ctx.closePath();
+  perimeter += calculateDistance(points[0], points[numberOfPoints - 1]); // Close the shape and add the last side to the perimeter
+    // Fill the shape with a random color
+  const color = `rgb(${getRandomInt(0, 255)}, ${getRandomInt(0, 255)}, ${getRandomInt(0, 255)})`;
+  ctx.fillStyle = color;
+  ctx.fill();
+
+  // Calculate the area
+  const area = calculateArea(points);
+
+  // Display the information
+  infoDiv.innerHTML = `Points: ${numberOfPoints}<br>Perimeter: ${perimeter.toFixed(2)}<br>Area: ${area.toFixed(2)}`;
+}
+
+// Initial draw
+drawRandomShape();
+
+// Event listener for button
+document.getElementById('generateShape').addEventListener('click', drawRandomShape);
+</script>
+</body>
+</html>
